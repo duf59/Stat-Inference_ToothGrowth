@@ -1,0 +1,183 @@
+---
+title: "simulation of the exponential distribution"
+author: "Renaud Dufour"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+library(ggplot2)
+```
+
+# Overview
+
+In this report, we investigate the exponential distribution and compare it with
+the Central Limit Theorem (CLT). As a reminder, the CLT states that the distribution of averages of iid variables
+(properly normalized) becomes that of a standard normal as the sample size $n$ increases,
+in other words, $\bar{X_n}$ is approximately $N(\mu,\sigma^2/n)$.
+
+# Simulation
+
+We want to investigate how the arithmetic mean of exponentially distributed
+iid variables converges to a normal distribution.
+The exponential distribution is the probability distribution that describes the
+time between events in a Poisson process $P(X=x, \lambda) = \lambda \exp{-\lambda x}$.
+$\lambda$ is the rate parameter. The mean of the exponential distribution is
+$\mu = 1/\lambda$ and the standard deviation is also $\sigma = 1/\lambda$.
+This distribution can be simulated in R with ```rexp(n, lambda)```.
+For all of the simulations, **we set $\lambda = 0.2$**, and we investigate the
+distribution of **averages of 40 exponentials**.
+We will consider **a thousand simulations**.  
+
+The following code generates the data. An histogram of the simulated data, along with
+the theoretical distribution, are shown in figure A1 of the Appendix.
+
+```{r}
+set.seed(2534)  # for reproducibility
+nosim  <- 1000  # number of simulated averages
+lambda <- 0.2   # rate parameter
+data  <- data.frame( x = rexp(nosim * 40, lambda))
+```
+
+Then, we compute the distribution of averages $\bar{X}_{n=40}$ :
+
+```{r}
+averages <- data.frame(x = apply(matrix(data$x,nosim),1,mean))
+```
+
+In the following, we will focus on the above distribution of 40 exponentially distributed iid, 
+addressing the following points :
+
+1. How does the sample mean compare to the theoretical mean of the distribution $\mu$.
+2. How does the sample variance compare to the theoretical variance of the distribution $\sigma$.
+3. How does the distribution compares to a normal distribution $N(\mu,\sigma^2/n)$.
+
+# Results
+
+## Sample mean
+
+Considering the distribution of the mean of 40 exponentials. Because the mean is
+an unbiased estimator and is consistent, the sample mean of this distribution converges
+to the population mean of the initial exponential distribution.
+Thereby the theoretical mean of this distribution is $\mu = 1/\lambda = 5$.  
+
+The simulated sample mean is :
+```{r, include = TRUE}
+sample.mean <- mean(averages$x)
+sample.mean
+```
+which is indeed close to $\mu = 5$.
+
+In order to illustrate this, the distribution is plotted below (density plot). 
+The position of the sample mean is indicated by a vertical red line.
+
+```{r, fig.width=3, fig.height=3}
+ggplot(averages, aes(x = x)) + 
+geom_density() +
+geom_vline(xintercept=sample.mean, size = 1, color = 'red') 
+```
+
+**Figure 2: distribution of averages of 40 exponential random variables with rate 
+$\lambda = 0.2$. The vertical red line indicates the sample mean whose theoretical
+value is the mean of the original exponential distribution $\mu = 1/\lambda = 5$.**
+
+## Sample variance
+
+The theoretical value for the variance of the distribution of averages is given by the variance
+of the original population $\sigma^2$ divided by the number of samples $n$ used to compute the averages :
+$var(\bar{X}) = \frac{\sigma^2}{n} = \frac{1}{40 \lambda^2} = 0.625$.
+
+The simulated sample variance is :
+```{r, include = TRUE}
+var(averages$x)
+```
+which is indeed close to the theoretical value $0.625$.
+
+To go further in illustrating the distribution of averages, one could repeat 
+the above simulation several times and plot the distribution of sample mean.
+One would observe that the sample means are distributed with a mean $\mu$ and
+their variance is centered around $\sigma/\sqrt{40}$.
+This is shown in figure A2 of the appendix.
+
+## Comparison to the normal distribution
+
+In order to compare the distribution of sample means to the Central Limit Theorem (CLT),
+we plot below the distribution (histogram) along with a normal distribution $N(\mu,\sigma/\sqrt{n})$.
+
+```{r, fig.width=5, fig.height=3}
+mu    <- 1/lambda
+sigma <- 1/lambda
+ggplot(averages, aes(x = x)) + 
+geom_histogram(alpha = .10, binwidth=0.1, colour = "black", aes(y = ..density..)) +
+stat_function(geom = "line", fun = dnorm, arg = list(mean = mu, sd = sigma/sqrt(40)),
+              size = 2, colour = "red", fill = NA)
+```
+
+**Figure 3: distribution of averages of 40 exponential random variables (rate 
+$\lambda = 0.2$). The mean and standard deviation of this distribution are respectively
+$\mu = 1/\lambda$ and $\sigma = 1/(\lambda\sqrt{40})$. To illustrate the central limit theorem, the distribution is compared
+ to a normal distribution $N(\mu,\sigma)$.**
+
+As an alternative to compare the two distributions one can also draw a quantile-quantile plot,
+ this is shown in figure A3 of the appendix.
+
+\pagebreak
+
+# Appendix
+
+## Exponential distribution
+
+```{r, fig.width=5, fig.height=3}
+ggplot(data, aes(x = x)) + 
+geom_histogram(alpha = .20, binwidth=0.8, colour = "black", aes(y = ..density..)) +
+stat_function(fun = dexp, arg = list(rate = lambda), size = 1, colour = "red")
+```
+
+**Figure A1 : histogram of the simulated data overlaid with the theoretical 
+exponential distribution (red curve, $\lambda = 0.2$)**
+
+## Repeated simulation
+
+```{r, cache = TRUE, fig.width=7, fig.height=3}
+library(gridExtra)
+set.seed(1332)
+nosim  <- 1000
+lambda <- 0.2  # rate parameter
+data  <- data.frame( x = rexp(nosim * 40, lambda))
+
+sample.mean = NULL
+sample.var  = NULL
+for (i in 1 : 100) {
+  x = apply(matrix(rexp(nosim * 40, lambda),nosim),1,mean)
+  sample.mean = c(sample.mean, mean(x))
+  sample.var  = c(sample.var,  var(x))
+  }
+
+dat <- data.frame(sample.mean,sample.var)
+
+plot1 <- ggplot(dat, aes(sample.mean)) + geom_density() +
+  geom_vline(xintercept=mean(sample.mean), size = 1, color = 'red') 
+
+plot2 <- ggplot(dat, aes(sample.var)) + geom_density() +
+  geom_vline(xintercept=mean(sample.var), size = 1, color = 'red')
+
+grid.arrange(plot1, plot2, ncol=2)
+```
+
+**Figure A2 : Distribution of sample mean (left) and sample variance (right) obtained 
+by repeating the simulation 100 times. The mean sample mean and mean sample variance (vertical red lines),
+are respectively ```r mean(dat$sample.mean)``` and ```r mean(dat$sample.var)```, very close to the
+theoretical values $\mu = 5$ and $var(\bar{X}) = 0.625$.**
+
+## Quantile-Quantile plot
+
+```{r, fig.width = 4, fig.height = 4}
+y <- (averages$x-mu)/(sigma/sqrt(40))  # normalize the data
+qqnorm(y, main = NULL)
+qqline(y)
+```
+
+**Figure 4: QQ plot of the distribution of averages of 40 exponential random variables
+(rescaled as $\frac{\bar{X}-\mu}{\sigma/\sqrt{40}}$). The straight line is the standard normal reference. 
+From this, it is likely that the population is normally distributed.**
+
