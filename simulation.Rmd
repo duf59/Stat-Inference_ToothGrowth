@@ -1,7 +1,7 @@
 ---
-title: "simulation of the exponential distribution"
+title: "The Exponential Distribution & Central Limit Theorem"
 author: "Renaud Dufour"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -48,9 +48,9 @@ averages <- data.frame(x = apply(matrix(data$x,nosim),1,mean))
 In the following, we will focus on the above distribution of 40 exponentially distributed iid, 
 addressing the following points :
 
-1. How does the sample mean compare to the theoretical mean of the distribution $\mu$.
-2. How does the sample variance compare to the theoretical variance of the distribution $\sigma$.
-3. How does the distribution compares to a normal distribution $N(\mu,\sigma^2/n)$.
+1. How does the sample mean compare to the theoretical mean of the distribution.
+2. How does the sample variance compare to the theoretical variance of the distribution.
+3. How does the distribution compares to a normal distribution.
 
 # Results
 
@@ -68,7 +68,7 @@ sample.mean
 ```
 which is indeed close to $\mu = 5$.
 
-In order to illustrate this, the distribution is plotted below (density plot). 
+In order to illustrate this, the distribution is plotted below as a density plot. 
 The position of the sample mean is indicated by a vertical red line.
 
 ```{r, fig.width=3, fig.height=3}
@@ -77,7 +77,7 @@ geom_density() +
 geom_vline(xintercept=sample.mean, size = 1, color = 'red') 
 ```
 
-**Figure 2: distribution of averages of 40 exponential random variables with rate 
+**Figure 1: distribution of averages of 40 exponential random variables with rate 
 $\lambda = 0.2$. The vertical red line indicates the sample mean whose theoretical
 value is the mean of the original exponential distribution $\mu = 1/\lambda = 5$.**
 
@@ -101,8 +101,8 @@ This is shown in figure A2 of the appendix.
 
 ## Comparison to the normal distribution
 
-In order to compare the distribution of sample means to the Central Limit Theorem (CLT),
-we plot below the distribution (histogram) along with a normal distribution $N(\mu,\sigma/\sqrt{n})$.
+In order to compare the distribution of averages to the Central Limit Theorem (CLT),
+we plot below the distribution as an histogram along with a normal distribution $N(\mu,\sigma/\sqrt{n})$.
 
 ```{r, fig.width=5, fig.height=3}
 mu    <- 1/lambda
@@ -113,13 +113,25 @@ stat_function(geom = "line", fun = dnorm, arg = list(mean = mu, sd = sigma/sqrt(
               size = 2, colour = "red", fill = NA)
 ```
 
-**Figure 3: distribution of averages of 40 exponential random variables (rate 
-$\lambda = 0.2$). The mean and standard deviation of this distribution are respectively
+**Figure 2: distribution of averages of 40 exponential random variables (rate 
+$\lambda = 0.2$). The theoretical mean and standard deviation of this distribution are respectively
 $\mu = 1/\lambda$ and $\sigma = 1/(\lambda\sqrt{40})$. To illustrate the central limit theorem, the distribution is compared
  to a normal distribution $N(\mu,\sigma)$.**
 
-As an alternative to compare the two distributions one can also draw a quantile-quantile plot,
- this is shown in figure A3 of the appendix.
+We can see in figure 2 that, qualitatively, the two distributions compare relatively well.
+As an alternative to compare them, one can also draw a quantile-quantile plot,
+ this is shown in figure A3 of the appendix. Finally, one can also perform an hypothesis 
+ test, considering the null hypothesis $H_0$ : *the distribution of averages is normal with 
+ mean $\mu$ and standard deviation $\sigma$*. The test statistic $Z$ and p-value are :
+  
+```{r}
+Z <- abs((mean(averages$x)-mu)/(sigma/sqrt(40)))
+p <- 2*pnorm(Z, lower.tail = FALSE)
+c(Z,p)
+```
+We see from the very large p-value that, even considering a extreme type I error 
+rate of 99%, we would still fail to reject the null hypothesis that the data is normal.
+This gives a relatively strong evidence that the distribution of averages is approximatly normal.
 
 \pagebreak
 
@@ -138,7 +150,7 @@ exponential distribution (red curve, $\lambda = 0.2$)**
 
 ## Repeated simulation
 
-```{r, cache = TRUE, fig.width=7, fig.height=3}
+```{r, fig.width=7, fig.height=2.5}
 library(gridExtra)
 set.seed(1332)
 nosim  <- 1000
@@ -171,7 +183,8 @@ theoretical values $\mu = 5$ and $var(\bar{X}) = 0.625$.**
 
 ## Quantile-Quantile plot
 
-```{r, fig.width = 4, fig.height = 4}
+```{r, fig.width = 3, fig.height = 2.5}
+par(mar=c(4,4,0,0)+0.1,mgp=c(2,1,0))
 y <- (averages$x-mu)/(sigma/sqrt(40))  # normalize the data
 qqnorm(y, main = NULL)
 qqline(y)
