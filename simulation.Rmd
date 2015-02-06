@@ -1,7 +1,7 @@
 ---
 title: "The Exponential Distribution & Central Limit Theorem"
 author: "Renaud Dufour"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -120,18 +120,8 @@ $\mu = 1/\lambda$ and $\sigma = 1/(\lambda\sqrt{40})$. To illustrate the central
 
 We can see in figure 2 that, qualitatively, the two distributions compare relatively well.
 As an alternative to compare them, one can also draw a quantile-quantile plot,
- this is shown in figure A3 of the appendix. Finally, one can also perform an hypothesis 
- test, considering the null hypothesis $H_0$ : *the distribution of averages is normal with 
- mean $\mu$ and standard deviation $\sigma$*. The test statistic $Z$ and p-value are :
-  
-```{r}
-Z <- abs((mean(averages$x)-mu)/(sigma/sqrt(40)))
-p <- 2*pnorm(Z, lower.tail = FALSE)
-c(Z,p)
-```
-We see from the very large p-value that, even considering a extreme type I error 
-rate of 99%, we would still fail to reject the null hypothesis that the data is normal.
-This gives a relatively strong evidence that the distribution of averages is approximatly normal.
+ this is shown in figure A3 of the appendix and also demonstrates that the distribution of averages
+  is approximately normal.
 
 \pagebreak
 
@@ -191,6 +181,6 @@ qqline(y)
 ```
 
 **Figure 4: QQ plot of the distribution of averages of 40 exponential random variables
-(rescaled as $\frac{\bar{X}-\mu}{\sigma/\sqrt{40}}$). The straight line is the standard normal reference. 
+(re-scaled as $\frac{\bar{X}-\mu}{\sigma/\sqrt{40}}$). The straight line is the standard normal reference. 
 From this, it is likely that the population is normally distributed.**
 
