@@ -1,0 +1,189 @@
+---
+title: "Tooth Growth Analysis"
+author: "Renaud Dufour"
+date: "Wednesday, January 21, 2015"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+```
+
+# Overview
+
+This report is part of the cource project of Statistical Inference on Coursera.
+We analyse the R built-in **ToothGrowth** dataset.
+The latter contains data about the length of odontoblasts (teeth) for guinea pigs 
+for two different supplements of Vitamin C and at different dose levels.
+After summarizing the dataset and performing some exploratory analysis, we will use 
+hypothesis tests in order to compare tooth growth by supplement type and dose.
+
+# Data summary and exploratory analysis
+
+First we load the ToothGrowth dataset (renaming variables with more explicit names) :
+```{r load}
+data(ToothGrowth)
+names(ToothGrowth) <- c("length", "supplement", "dose")
+```
+
+The dataset contains the following variables :  
+
+* **length** : numeric, tooth length
+* **supplement** : factor, supplement type (VC for orange juice or OJ for ascorbic acid).
+* **dose** : numeric,	dose in milligrams (0.1, 1 or 2).  
+
+There is in total 60 observations (10 pigs for each supplement-dose pair).
+Below is a summary of the data :
+```{r summary, include = TRUE}
+summary(ToothGrowth)
+```
+
+And a box plot showing tooth length vs. supplement type and dose :
+```{r boxplot, fig.width=6, fig.height=4}
+supplement_names    <- list( 'OJ'="Orange Juice", 'VC'="Ascorbic Acid")
+supplement_labeller <- function(variable,value){supplement_names[value]}
+
+ggplot(ToothGrowth, aes(x = as.factor(dose), y = length, fill = as.factor(dose)) ) +
+  facet_grid(~supplement, labeller = supplement_labeller) +
+  geom_boxplot() + theme_bw() + 
+  labs(title="Tooth Growth in Guinea Pigs \n",
+       x = "Dose [mg]",
+       y="Change in Length [mm]") + 
+  guides(fill = guide_legend("Dose [mg]"))
+```
+
+**Figure 1: Tooth length as a function of supplement type and dose.**
+
+# Comparison of tooth growth by supplement and dose (t-tests)
+
+In the following, we analyze the impact of supplement type and dose on the tooth
+growth using hypothesis testing.
+For all the following tests, we assume normality of the underlying data.
+
+First we perform a series of pairwise t.test for each supplement type.
+We consider the null hypothesis $H_0$ : *"true difference in means is equal to 0"* 
+versus the alternative hypothesis $H_a$ : *"true difference in means is not equal to 0"*,
+Tests are two-sided with a default $\alpha = 5\%$ type 1 error rate and we consider unequal variances.
+```{r pairwise t.test dose}
+# Orange Juice supplement
+OJ.data <- filter(ToothGrowth, supplement=="OJ")
+OJ.crosstest <- with(OJ.data, pairwise.t.test(length, dose, pool.sd = FALSE, 
+                                              p.adjust.method = "none"))
+# Ascorbic Acid supplement
+VC.data <- filter(ToothGrowth, supplement=="VC")
+VC.crosstest <- with(VC.data, pairwise.t.test(length, dose, pool.sd = FALSE, 
+                                              p.adjust.method = "none"))
+OJ.crosstest$p.value
+VC.crosstest$p.value
+```
+
+From the above results, we see that all p-values are  below $\alpha$, so we can
+conclude that the supplement dose has a significant impact on tooth growth, this whatever
+the type of supplement used.
+
+We then perform another series of t-test to investigate if, for a given dose,
+the orange juice is more efficient than the ascorbic Acid (as suggested by looking at figure 1).
+We consider in this case the null hypothesis $H_0$ : *"true difference in means is equal to 0"* 
+versus the alternative hypothesis $H_a$ : *"true difference in means is greater than 0"*,
+Tests are one sided with a default $\alpha = 5\%$ type 1 error rate and we consider unequal variances.
+
+```{r pairwise t.test supplement}
+
+getp <- function(x) {
+  a <- x[x$supplement == "OJ","length"]
+  b <- x[x$supplement == "VC","length"]
+  t.test(a, b, alternative = "greater", var.equal = FALSE)$p.value
+  }
+
+suptest <- ddply(ToothGrowth, .(dose), getp)
+names(suptest) <- c("dose", "p-value")
+round(suptest,4)
+```
+
+The results above show, for each dose, the obtained p-value.
+We observe that, as far as low and medium doses are concerned, there is a significant increase
+in mean tooth length when using Orange Juice compared to Ascorbic acid. For the higher dose however,
+ the difference between the two supplement types is not significant.
+
+# Conclusion
+
+In this report we have analyzed the **ToothGrowth** dataset containing data about the length of odontoblasts (teeth) for guinea pigs for two different supplements of Vitamin C and at different dose levels.
+Assuming normality of the underlying data, We have performed a series of t-test showing that :
+
+* For a given supplement type, there is a significant increase in tooth length for doses of 0.5, 1 and 2 mg
+(two-sided tests, $\alpha = 5\%$, unequal variances).
+* For a given dose, the Orange juice appears globally more efficient compared to the ascorbic acid
+(significantly larger tooth length for doses of 0.5 and 1 mg) (two-sided t-tests, $\alpha = 5\%$, unequal variances).
+
+It is to be noted that the analysis was performed based only on the techniques from class (up to week 3 lectures).
+Therefore we made no correction of the p-values when doing multiple comparisons.
+The changes in the results obtained by considering equal variances or corrected p-values are reported in the appendix.
+
+\pagebreak
+
+# Appendix
+
+## t-tests with equal variances
+
+Below are the results of pairwise t.test for each supplement type, considering equal variances.
+The null hypothesis $H_0$ : *"true difference in means is equal to 0"* 
+versus $H_a$ : *"true difference in means is not equal to 0"*,
+Tests are two-sided with a default $\alpha = 5\%$ type 1 error rate.
+```{r}
+# Orange Juice supplement
+OJ.data <- filter(ToothGrowth, supplement=="OJ")
+OJ.crosstest <- with(OJ.data, pairwise.t.test(length, dose, pool.sd = TRUE, 
+                                              p.adjust.method = "none"))
+# Ascorbic Acid supplement
+VC.data <- filter(ToothGrowth, supplement=="VC")
+VC.crosstest <- with(VC.data, pairwise.t.test(length, dose, pool.sd = TRUE, 
+                                              p.adjust.method = "none"))
+OJ.crosstest$p.value
+VC.crosstest$p.value
+```
+
+The only difference here is that we fail to reject the null hypothesis for the difference in tooth length between 1 and 2 mg dose for the Orange juice supplement.  
+
+The second series of t-test, focusing on the difference in means between the two supplement types, is shown below
+ in the hypothesis of equal variances. ($H_0$ : *"true difference in means is equal to 0"* 
+versus $H_a$ : *"true difference in means is greater than 0"*). Tests are one sided with a default $\alpha = 5\%$ type 1 error rate.
+
+```{r}
+
+getp <- function(x) {
+  a <- x[x$supplement == "OJ","length"]
+  b <- x[x$supplement == "VC","length"]
+  t.test(a, b, alternative = "greater", var.equal = TRUE)$p.value
+  }
+
+suptest <- ddply(ToothGrowth, .(dose), getp)
+names(suptest) <- c("dose", "p-value")
+round(suptest,4)
+```
+
+As we can see, assuming equal variances does not impact these results.
+
+## pairwise t-tests with corrected p-values
+
+Below are the results of pairwise t.test for each supplement type in the case where p-values are corrected by controlling the false discovery rate ("BH" correction).
+The null hypothesis $H_0$ : *"true difference in means is equal to 0"* 
+versus $H_a$ : *"true difference in means is not equal to 0"*,
+Tests are two-sided with a default $\alpha = 5\%$ type 1 error rate and unequal variances.
+```{r}
+# Orange Juice supplement
+OJ.data <- filter(ToothGrowth, supplement=="OJ")
+OJ.crosstest <- with(OJ.data, pairwise.t.test(length, dose, pool.sd = FALSE, 
+                                              p.adjust.method = "BH"))
+# Ascorbic Acid supplement
+VC.data <- filter(ToothGrowth, supplement=="VC")
+VC.crosstest <- with(VC.data, pairwise.t.test(length, dose, pool.sd = FALSE, 
+                                              p.adjust.method = "BH"))
+OJ.crosstest$p.value
+VC.crosstest$p.value
+```
+
+We see that the results are not changed compared to the unequal variances case and no correction (significant diffence in means is found in all cases).
+
